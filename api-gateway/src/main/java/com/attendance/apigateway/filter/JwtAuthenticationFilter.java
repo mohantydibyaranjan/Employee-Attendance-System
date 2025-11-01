@@ -55,8 +55,8 @@ public class JwtAuthenticationFilter implements GlobalFilter {
             }
 
             exchange.getRequest().mutate()
-                    .header("role", role)
-                    .header("employeeId", claims.get("employeeId").toString())
+                    .header("X-Role", role)
+                    .header("X-Employee-Id", claims.get("employeeId").toString())
                     .build();
         }
         return chain.filter(exchange);
@@ -66,6 +66,9 @@ public class JwtAuthenticationFilter implements GlobalFilter {
         String path = request.getURI().getPath();
         if (path.startsWith("/employee/") || path.startsWith("/report/")) {
             return "ADMIN".equals(role);
+        }
+        if (path.startsWith("/attendance/")) {
+            return "ADMIN".equals(role) || "EMPLOYEE".equals(role);
         }
         return true;
     }

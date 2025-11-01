@@ -1,6 +1,7 @@
 package com.attendance.reportservice.service;
 
 import com.attendance.common.entity.Attendance;
+import com.attendance.common.exception.ResourceNotFoundException;
 import com.attendance.reportservice.entity.AttendanceReport;
 import com.attendance.reportservice.repository.AttendanceReportRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ public class ReportService {
 
     public AttendanceReport getMonthlySummary(Long employeeId, String month) {
         return reportRepository.findByEmployeeIdAndMonth(employeeId, month)
-                .orElseThrow(() -> new RuntimeException("Report not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Report not found"));
     }
 
     public List<AttendanceReport> getAllReports() {

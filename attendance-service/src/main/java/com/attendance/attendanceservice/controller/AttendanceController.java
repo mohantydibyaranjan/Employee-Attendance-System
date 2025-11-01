@@ -1,60 +1,81 @@
 package com.attendance.attendanceservice.controller;
 
 import com.attendance.common.dto.ApiResponse;
+import com.attendance.common.dto.AttendanceDto;
 import com.attendance.common.entity.Attendance;
 import com.attendance.attendanceservice.service.AttendanceService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/attendance")
+@Tag(name = "Attendance Management", description = "APIs for managing employee attendance")
 public class AttendanceController {
 
     @Autowired
     private AttendanceService attendanceService;
 
+    @Operation(summary = "Check in", description = "Records an employee's check-in.")
     @PostMapping("/checkin")
-    public ResponseEntity<ApiResponse<Attendance>> checkIn(@RequestHeader("employeeId") Long employeeId) {
+    public ResponseEntity<ApiResponse<AttendanceDto>> checkIn(@RequestHeader("employeeId") Long employeeId) {
         Attendance attendance = attendanceService.checkIn(employeeId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Check-in successful", attendance));
+        return ResponseEntity.ok(new ApiResponse<>(true, "Check-in successful", convertToDto(attendance)));
     }
 
+    @Operation(summary = "Check out", description = "Records an employee's check-out.")
     @PostMapping("/checkout")
-    public ResponseEntity<ApiResponse<Attendance>> checkOut(@RequestHeader("employeeId") Long employeeId) {
+    public ResponseEntity<ApiResponse<AttendanceDto>> checkOut(@RequestHeader("employeeId") Long employeeId) {
         Attendance attendance = attendanceService.checkOut(employeeId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Check-out successful", attendance));
+        return ResponseEntity.ok(new ApiResponse<>(true, "Check-out successful", convertToDto(attendance)));
     }
 
+    @Operation(summary = "Get today's attendance", description = "Retrieves today's attendance for a given employee.")
     @GetMapping("/today/{employeeId}")
-    public ResponseEntity<ApiResponse<Attendance>> getTodayAttendance(@PathVariable Long employeeId) {
+    public ResponseEntity<ApiResponse<AttendanceDto>> getTodayAttendance(@PathVariable Long employeeId) {
         Attendance attendance = attendanceService.getTodayAttendance(employeeId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Today's attendance retrieved successfully", attendance));
+        return ResponseEntity.ok(new ApiResponse<>(true, "Today's attendance retrieved successfully", convertToDto(attendance)));
     }
 
+    @Operation(summary = "Get attendance history", description = "Retrieves the attendance history for a given employee.")
     @GetMapping("/history/{employeeId}")
-    public ResponseEntity<ApiResponse<List<Attendance>>> getAttendanceHistory(@PathVariable Long employeeId) {
+    public ResponseEntity<ApiResponse<List<AttendanceDto>>> getAttendanceHistory(@PathVariable Long employeeId) {
         List<Attendance> attendanceHistory = attendanceService.getAttendanceHistory(employeeId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Attendance history retrieved successfully", attendanceHistory));
+        List<AttendanceDto> attendanceDtos = attendanceHistory.stream().map(this::convertToDto).collect(Collectors.toList());
+        return ResponseEntity.ok(new ApiResponse<>(true, "Attendance history retrieved successfully", attendanceDtos));
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<ApiResponse<Page<Attendance>>> searchAttendance(
+    @GetMapping("/filter")
+    public ResponseEntity<ApiResponse<Page<AttendanceDto>>> filterAttendance(
             @RequestParam(required = false) Long employeeId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
             Pageable pageable) {
-        Specification<Attendance> spec = (root, query, criteriaBuilder) -> {
-            if (employeeId == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.equal(root.get("employeeId"), employeeId);
-        };
+        Specification<Attendance> spec = com.attendance.attendanceservice.util.SpecificationBuilder.build(employeeId,
+                startDate != null ? java.time.LocalDate.parse(startDate) : null,
+                endDate != null ? java.time.LocalDate.parse(endDate) : null);
         Page<Attendance> attendance = attendanceService.searchAttendance(spec, pageable);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Attendance records retrieved successfully", attendance));
+        Page<AttendanceDto> attendanceDtos = attendance.map(this::convertToDto);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Attendance records retrieved successfully", attendanceDtos));
+    }
+
+    private AttendanceDto convertToDto(Attendance attendance) {
+        AttendanceDto attendanceDto = new AttendanceDto();
+        attendanceDto.setId(attendance.getId());
+        attendanceDto.setEmployeeId(attendance.getEmployeeId());
+        attendanceDto.setCheckInTime(attendance.getCheckInTime());
+        attendanceDto.setCheckOutTime(attendance.getCheckOutTime());
+        attendanceDto.setTotalHours(attendance.getTotalHours());
+        attendanceDto.setStatus(attendance.getStatus());
+        return attendanceDto;
     }
 }

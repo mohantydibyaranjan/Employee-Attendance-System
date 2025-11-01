@@ -1,8 +1,11 @@
 package com.attendance.authservice.service;
 
+import com.attendance.authservice.dto.AuthRequest;
 import com.attendance.authservice.dto.UserDto;
 import com.attendance.authservice.entity.User;
 import com.attendance.authservice.repository.UserRepository;
+import com.attendance.common.exception.InvalidOperationException;
+import com.attendance.common.exception.ResourceNotFoundException;
 import com.attendance.authservice.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,12 +32,12 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public String login(UserDto userDto) {
-        User user = userRepository.findByUsername(userDto.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if (passwordEncoder.matches(userDto.getPassword(), user.getPassword())) {
+    public String login(AuthRequest authRequest) {
+        User user = userRepository.findByUsername(authRequest.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (passwordEncoder.matches(authRequest.getPassword(), user.getPassword())) {
             return jwtUtil.generateToken(user.getUsername(), user.getRole(), user.getId());
         }
-        throw new RuntimeException("Invalid password");
+        throw new InvalidOperationException("Invalid password");
     }
 }

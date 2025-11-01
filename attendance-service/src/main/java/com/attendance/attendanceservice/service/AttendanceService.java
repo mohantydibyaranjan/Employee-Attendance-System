@@ -2,6 +2,7 @@ package com.attendance.attendanceservice.service;
 
 import com.attendance.common.entity.Attendance;
 import com.attendance.attendanceservice.repository.AttendanceRepository;
+import com.attendance.common.exception.InvalidOperationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -49,7 +50,7 @@ public class AttendanceService {
                 employeeId,
                 now.toLocalDate().atStartOfDay(),
                 now
-        ).orElseThrow(() -> new RuntimeException("No check-in found for today"));
+        ).orElseThrow(() -> new InvalidOperationException("No check-in found for today"));
 
         attendance.setCheckOutTime(now);
         Duration duration = Duration.between(attendance.getCheckInTime(), attendance.getCheckOutTime());

@@ -1,5 +1,6 @@
 package com.attendance.employeeservice.service;
 
+import com.attendance.common.exception.ResourceNotFoundException;
 import com.attendance.employeeservice.entity.Employee;
 import com.attendance.employeeservice.repository.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ public class EmployeeService {
 
     public Employee getEmployeeById(Long id) {
         return employeeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
     }
 
     public Employee updateEmployee(Long id, Employee employeeDetails) {
