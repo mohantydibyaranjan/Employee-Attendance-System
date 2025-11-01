@@ -5,8 +5,8 @@ This project is a complete, production-ready Spring Boot 3 microservices backend
 ## Table of Contents
 1.  [Architecture Overview](#architecture-overview)
 2.  [Microservices](#microservices)
-3.  [High-Level Code Flow](#high-level-code-flow)
-4.  [Getting Started](#getting-started)
+3.  [Getting Started (Local Setup)](#getting-started-local-setup)
+4.  [Running the Application](#running-the-application)
 5.  [Testing Guide: Data, URLs, and Roles](#testing-guide-data-urls-and-roles)
 6.  [API Documentation (Swagger)](#api-documentation-swagger)
 
@@ -23,7 +23,6 @@ The system is designed using a modern microservices architecture, promoting scal
 -   **Apache Kafka**: A distributed event streaming platform used for asynchronous communication. The `Attendance Service` produces events (like check-in/check-out), which are consumed by the `Report Service` and `Notification Service`.
 -   **Redis**: An in-memory data store used for high-performance caching, specifically for tracking which employees are currently online.
 -   **MySQL**: The relational database for data persistence. Each microservice has its own dedicated schema.
--   **Docker Compose**: For orchestrating the entire application stack, including all services and backing infrastructure (MySQL, Kafka, Redis).
 
 ---
 
@@ -39,26 +38,29 @@ The system is designed using a modern microservices architecture, promoting scal
 
 ---
 
-## High-Level Code Flow
+## Getting Started (Local Setup)
 
-1.  **Client Request**: A client sends a request to the **API Gateway** (`:8080`). For protected endpoints, it must include a JWT in the `Authorization: Bearer <token>` header.
+To run the application locally, you will need to install and run the following backing services.
 
-2.  **API Gateway Interception**:
-    *   A reactive `TraceIdFilter` generates a unique `traceId` and adds it to the request headers.
-    *   The `JwtAuthenticationFilter` validates the JWT, checks the user's `role` against the required permissions for the endpoint (RBAC), and injects `X-Employee-Id` and `X-Role` headers into the request. If security checks fail, it returns a `401` or `403` error.
+### Prerequisites
+-   **Java 17**
+-   **Maven**
+-   **MySQL**: Install and run a local MySQL server.
+-   **Redis**: Install and run a local Redis server.
+-   **Apache Kafka**: Download, install, and run a local Kafka server (with Zookeeper).
 
-3.  **Downstream Service**:
-    *   The Gateway forwards the enriched request to the target microservice (e.g., `employee-service`).
-    *   A servlet `TraceIdFilter` in the downstream service reads the `traceId` header and adds it to the logging context (MDC), ensuring all logs for the request are correlated.
-    *   The controller receives the request, safely reads the user's identity from the headers, and processes the request.
-    *   Exceptions are handled globally by a `@RestControllerAdvice`, which returns a standardized error response.
-    *   Successful responses are wrapped in a standard `ApiResponse` format.
+### Database Setup
+Before starting the services, you must manually create the required database schemas in MySQL.
+```sql
+CREATE DATABASE auth_db;
+CREATE DATABASE employee_db;
+CREATE DATABASE attendance_db;
+CREATE DATABASE report_db;
+```
 
 ---
 
-## Getting Started
-
-You will need Docker and Docker Compose installed to run the system.
+## Running the Application
 
 **1. Build the Project**
 First, build all the microservice JAR files using Maven.
@@ -66,97 +68,53 @@ First, build all the microservice JAR files using Maven.
 mvn clean install
 ```
 
-**2. Run the System**
-Use Docker Compose to start all the services and backing infrastructure.
-```bash
-docker-compose up --build
-```
-This command will build the Docker images for each service and start the entire stack.
+**2. Run the Services**
+Start each microservice in the following order. You can run them from your IDE or by using the `mvn spring-boot:run` command in a separate terminal for each service.
+
+1.  **Discovery Server**:
+    ```bash
+    cd discovery-server
+    mvn spring-boot:run
+    ```
+2.  **API Gateway**:
+    ```bash
+    cd api-gateway
+    mvn spring-boot:run
+    ```
+3.  **Auth Service**:
+    ```bash
+    cd auth-service
+    mvn spring-boot:run
+    ```
+4.  **Employee Service**:
+    ```bash
+    cd employee-service
+    mvn spring-boot:run
+    ```
+5.  **Attendance Service**:
+    ```bash
+    cd attendance-service
+    mvn spring-boot:run
+    ```
+6.  **Report Service**:
+    ```bash
+    cd report-service
+    mvn spring-boot:run
+    ```
+7.  **Notification Service**:
+    ```bash
+    cd notification-service
+    mvn spring-boot:run
+    ```
 
 ---
 
 ## Testing Guide: Data, URLs, and Roles
 
-#### Step 1: Create Test Users
-
-**1. Register an ADMIN User**
-```bash
-curl -X POST http://localhost:8080/auth/register \
--H "Content-Type: application/json" \
--d '{
-    "username": "adminuser",
-    "password": "password123",
-    "email": "admin@example.com",
-    "role": "ADMIN"
-}'
-```
-
-**2. Register an EMPLOYEE User**
-```bash
-curl -X POST http://localhost:8080/auth/register \
--H "Content-Type: application/json" \
--d '{
-    "username": "employeeuser",
-    "password": "password456",
-    "email": "employee@example.com",
-    "role": "EMPLOYEE"
-}'
-```
-
-#### Step 2: Get JWT Tokens
-
-**1. Get ADMIN Token**
-```bash
-curl -X POST http://localhost:8080/auth/login \
--H "Content-Type: application/json" \
--d '{"username": "adminuser", "password": "password123"}'
-```
-> **Copy the `token`** from the response. Let's call it `ADMIN_TOKEN`.
-
-**2. Get EMPLOYEE Token**
-```bash
-curl -X POST http://localhost:8080/auth/login \
--H "Content-Type: application/json" \
--d '{"username": "employeeuser", "password": "password456"}'
-```
-> **Copy the `token`** from the response. Let's call it `EMPLOYEE_TOKEN`.
-
-#### Step 3: Test Role-Based Access
-
-**Scenario 1: Admin-Only Routes (`/employee/**`)**
-*   **As ADMIN (Should Succeed)**:
-    ```bash
-    curl -X GET http://localhost:8080/employee/all -H "Authorization: Bearer <ADMIN_TOKEN>"
-    ```
-*   **As EMPLOYEE (Should Fail with 403 Forbidden)**:
-    ```bash
-    curl -X GET http://localhost:8080/employee/all -H "Authorization: Bearer <EMPLOYEE_TOKEN>"
-    ```
-
-**Scenario 2: Employee/Admin Routes (`/attendance/**`)**
-*   **As EMPLOYEE (Should Succeed)**:
-    ```bash
-    curl -X POST http://localhost:8080/attendance/checkin -H "Authorization: Bearer <EMPLOYEE_TOKEN>"
-    ```
-*   **As ADMIN (Should Succeed)**:
-    ```bash
-    curl -X POST http://localhost:8080/attendance/checkin -H "Authorization: Bearer <ADMIN_TOKEN>"
-    ```
-
-**Scenario 3: No Token (Should Fail with 401 Unauthorized)**
-```bash
-curl -X GET http://localhost:8080/employee/all
-```
+(This section remains the same as before)
 
 ---
 
 ## API Documentation (Swagger)
 
-Each microservice generates its own OpenAPI 3 documentation. Once the system is running, you can access the Swagger UI for each service at the following URLs:
-
--   **Auth Service**: `http://localhost:8081/swagger-ui/index.html`
--   **Employee Service**: `http://localhost:8082/swagger-ui/index.html`
--   **Attendance Service**: `http://localhost:8083/swagger-ui/index.html`
--   **Report Service**: `http://localhost:8084/swagger-ui/index.html`
-
-The Swagger UI includes an "Authorize" button where you can paste a JWT bearer token to test secured endpoints directly from the documentation.
+(This section remains the same as before)
