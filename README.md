@@ -1,75 +1,162 @@
-# Employee Attendance System
+# Enterprise Employee Attendance System
 
-This is a complete Spring Boot Microservices Backend for an Employee Attendance System.
+This project is a complete, production-ready Spring Boot 3 microservices backend for an Employee Attendance System. It is built with enterprise-grade features including centralized security, structured logging, advanced data querying, and comprehensive API documentation.
 
-## Architecture
+## Table of Contents
+1.  [Architecture Overview](#architecture-overview)
+2.  [Microservices](#microservices)
+3.  [High-Level Code Flow](#high-level-code-flow)
+4.  [Getting Started](#getting-started)
+5.  [Testing Guide: Data, URLs, and Roles](#testing-guide-data-urls-and-roles)
+6.  [API Documentation (Swagger)](#api-documentation-swagger)
 
-The system is built using a microservices architecture, with the following components:
+---
 
-*   **Spring Boot 3:** The core framework for building the microservices.
-*   **Spring Cloud:** Provides tools for building and managing microservices, including a service discovery server and an API gateway.
-*   **Spring Security (JWT):** Used for securing the application with JSON Web Tokens.
-*   **Kafka:** A distributed streaming platform used for real-time event processing.
-*   **Redis:** An in-memory data store used for caching online employee data.
-*   **MySQL:** A relational database used for data persistence.
-*   **Docker Compose:** Used for orchestrating the deployment of all the services.
+## Architecture Overview
+
+The system is designed using a modern microservices architecture, promoting scalability, resilience, and maintainability.
+
+-   **Spring Boot 3 & Java 17**: The core framework for building robust and high-performance microservices.
+-   **Spring Cloud Gateway**: A single entry point (API Gateway) for all client requests, responsible for routing, security, and cross-cutting concerns.
+-   **Eureka Server**: For dynamic service discovery, allowing services to find and communicate with each other without hardcoded locations.
+-   **Spring Security + JWT**: Centralized authentication and authorization at the API Gateway. JWTs carry user identity (`employeeId`) and `role`, which are securely propagated to downstream services.
+-   **Apache Kafka**: A distributed event streaming platform used for asynchronous communication. The `Attendance Service` produces events (like check-in/check-out), which are consumed by the `Report Service` and `Notification Service`.
+-   **Redis**: An in-memory data store used for high-performance caching, specifically for tracking which employees are currently online.
+-   **MySQL**: The relational database for data persistence. Each microservice has its own dedicated schema.
+-   **Docker Compose**: For orchestrating the entire application stack, including all services and backing infrastructure (MySQL, Kafka, Redis).
+
+---
 
 ## Microservices
 
-The system is composed of the following microservices:
+-   **API Gateway**: The front door to the system. It handles request routing and enforces all security rules.
+-   **Discovery Server**: The service registry where all other services register themselves.
+-   **Auth Service**: Manages user registration and login, and issues JWTs.
+-   **Employee Service**: Handles CRUD operations for employee data. (Admin only)
+-   **Attendance Service**: Manages employee check-ins and check-outs, publishes events to Kafka, and updates Redis.
+-   **Report Service**: Consumes Kafka events to generate attendance reports. (Admin only)
+-   **Notification Service**: Consumes Kafka events to send notifications (e.g., for late check-ins).
 
-*   **Discovery Server:** A Eureka server that acts as a service registry, allowing services to dynamically discover and communicate with each other.
-*   **API Gateway:** A Spring Cloud Gateway that serves as the single entry point for all client requests, handling routing and centralizing security.
-*   **Auth Service:** Responsible for user registration, login, and JWT token generation.
-*   **Employee Service:** Handles all CRUD operations related to employee data.
-*   **Attendance Service:** Manages employee check-ins and check-outs, persists attendance data to a MySQL database, and publishes events to a Kafka topic.
-*   **Report Service:** Subscribes to the Kafka topic to consume attendance events in real-time, processes the data to generate daily and monthly attendance summaries, and exposes endpoints for querying these reports.
-*   **Notification Service:** Subscribes to the Kafka topic to detect events that require notifications, such as late check-ins.
+---
 
-## How to Build and Run
+## High-Level Code Flow
 
-To build and run the entire system, you will need to have Docker and Docker Compose installed.
+1.  **Client Request**: A client sends a request to the **API Gateway** (`:8080`). For protected endpoints, it must include a JWT in the `Authorization: Bearer <token>` header.
 
-1.  Clone the repository:
+2.  **API Gateway Interception**:
+    *   A reactive `TraceIdFilter` generates a unique `traceId` and adds it to the request headers.
+    *   The `JwtAuthenticationFilter` validates the JWT, checks the user's `role` against the required permissions for the endpoint (RBAC), and injects `X-Employee-Id` and `X-Role` headers into the request. If security checks fail, it returns a `401` or `403` error.
 
+3.  **Downstream Service**:
+    *   The Gateway forwards the enriched request to the target microservice (e.g., `employee-service`).
+    *   A servlet `TraceIdFilter` in the downstream service reads the `traceId` header and adds it to the logging context (MDC), ensuring all logs for the request are correlated.
+    *   The controller receives the request, safely reads the user's identity from the headers, and processes the request.
+    *   Exceptions are handled globally by a `@RestControllerAdvice`, which returns a standardized error response.
+    *   Successful responses are wrapped in a standard `ApiResponse` format.
+
+---
+
+## Getting Started
+
+You will need Docker and Docker Compose installed to run the system.
+
+**1. Build the Project**
+First, build all the microservice JAR files using Maven.
+```bash
+mvn clean install
+```
+
+**2. Run the System**
+Use Docker Compose to start all the services and backing infrastructure.
+```bash
+docker-compose up --build
+```
+This command will build the Docker images for each service and start the entire stack.
+
+---
+
+## Testing Guide: Data, URLs, and Roles
+
+#### Step 1: Create Test Users
+
+**1. Register an ADMIN User**
+```bash
+curl -X POST http://localhost:8080/auth/register \
+-H "Content-Type: application/json" \
+-d '{
+    "username": "adminuser",
+    "password": "password123",
+    "email": "admin@example.com",
+    "role": "ADMIN"
+}'
+```
+
+**2. Register an EMPLOYEE User**
+```bash
+curl -X POST http://localhost:8080/auth/register \
+-H "Content-Type: application/json" \
+-d '{
+    "username": "employeeuser",
+    "password": "password456",
+    "email": "employee@example.com",
+    "role": "EMPLOYEE"
+}'
+```
+
+#### Step 2: Get JWT Tokens
+
+**1. Get ADMIN Token**
+```bash
+curl -X POST http://localhost:8080/auth/login \
+-H "Content-Type: application/json" \
+-d '{"username": "adminuser", "password": "password123"}'
+```
+> **Copy the `token`** from the response. Let's call it `ADMIN_TOKEN`.
+
+**2. Get EMPLOYEE Token**
+```bash
+curl -X POST http://localhost:8080/auth/login \
+-H "Content-Type: application/json" \
+-d '{"username": "employeeuser", "password": "password456"}'
+```
+> **Copy the `token`** from the response. Let's call it `EMPLOYEE_TOKEN`.
+
+#### Step 3: Test Role-Based Access
+
+**Scenario 1: Admin-Only Routes (`/employee/**`)**
+*   **As ADMIN (Should Succeed)**:
     ```bash
-    git clone https://github.com/your-username/employee-attendance-system.git
+    curl -X GET http://localhost:8080/employee/all -H "Authorization: Bearer <ADMIN_TOKEN>"
+    ```
+*   **As EMPLOYEE (Should Fail with 403 Forbidden)**:
+    ```bash
+    curl -X GET http://localhost:8080/employee/all -H "Authorization: Bearer <EMPLOYEE_TOKEN>"
     ```
 
-2.  Navigate to the project directory:
-
+**Scenario 2: Employee/Admin Routes (`/attendance/**`)**
+*   **As EMPLOYEE (Should Succeed)**:
     ```bash
-    cd employee-attendance-system
+    curl -X POST http://localhost:8080/attendance/checkin -H "Authorization: Bearer <EMPLOYEE_TOKEN>"
+    ```
+*   **As ADMIN (Should Succeed)**:
+    ```bash
+    curl -X POST http://localhost:8080/attendance/checkin -H "Authorization: Bearer <ADMIN_TOKEN>"
     ```
 
-3.  Build the project using Maven:
+**Scenario 3: No Token (Should Fail with 401 Unauthorized)**
+```bash
+curl -X GET http://localhost:8080/employee/all
+```
 
-    ```bash
-    mvn clean install
-    ```
+---
 
-4.  Run the system using Docker Compose:
+## API Documentation (Swagger)
 
-    ```bash
-    docker-compose up --build
-    ```
+Each microservice generates its own OpenAPI 3 documentation. Once the system is running, you can access the Swagger UI for each service at the following URLs:
 
-This will build and run all the services, including the microservices, Kafka, Redis, and MySQL.
+-   **Auth Service**: `http://localhost:8081/swagger-ui/index.html`
+-   **Employee Service**: `http://localhost:8082/swagger-ui/index.html`
+-   **Attendance Service**: `http://localhost:8083/swagger-ui/index.html`
+-   **Report Service**: `http://localhost:8084/swagger-ui/index.html`
 
-## API Endpoints
-
-The following are the main API endpoints exposed by the system:
-
-*   **/auth/register:** Registers a new user.
-*   **/auth/login:** Authenticates an existing user and returns a JWT.
-*   **/employee:** Creates a new employee.
-*   **/employee/{id}:** Retrieves an employee by their ID.
-*   **/employee/{id}:** Updates an employee's data.
-*   **/employee/{id}:** Deletes an employee.
-*   **/employee/all:** Retrieves all employees.
-*   **/attendance/checkin:** Records an employee's check-in.
-*   **/attendance/checkout:** Records an employee's check-out.
-*   **/attendance/today/{employeeId}:** Retrieves today's attendance for a given employee.
-*   **/attendance/history/{employeeId}:** Retrieves the attendance history for a given employee.
-*   **/report/summary/monthly:** Retrieves the monthly attendance summary for a given employee.
-*   **/report/summary/daily:** Retrieves the daily attendance summary.
+The Swagger UI includes an "Authorize" button where you can paste a JWT bearer token to test secured endpoints directly from the documentation.
