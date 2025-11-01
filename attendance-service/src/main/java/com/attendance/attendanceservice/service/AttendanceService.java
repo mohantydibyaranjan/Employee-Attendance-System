@@ -5,6 +5,9 @@ import com.attendance.attendanceservice.repository.AttendanceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -70,5 +73,9 @@ public class AttendanceService {
 
     public List<Attendance> getAttendanceHistory(Long employeeId) {
         return attendanceRepository.findByEmployeeId(employeeId);
+    }
+
+    public Page<Attendance> searchAttendance(Specification<Attendance> spec, Pageable pageable) {
+        return attendanceRepository.findAll(spec, pageable);
     }
 }

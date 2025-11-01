@@ -3,6 +3,9 @@ package com.attendance.employeeservice.service;
 import com.attendance.employeeservice.entity.Employee;
 import com.attendance.employeeservice.repository.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,5 +42,9 @@ public class EmployeeService {
 
     public List<Employee> getAllEmployees() {
         return employeeRepository.findAll();
+    }
+
+    public Page<Employee> searchEmployees(Specification<Employee> spec, Pageable pageable) {
+        return employeeRepository.findAll(spec, pageable);
     }
 }

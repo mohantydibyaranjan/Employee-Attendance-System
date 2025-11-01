@@ -4,6 +4,9 @@ import com.attendance.common.entity.Attendance;
 import com.attendance.reportservice.entity.AttendanceReport;
 import com.attendance.reportservice.repository.AttendanceReportRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
@@ -22,6 +25,10 @@ public class ReportService {
 
     public List<AttendanceReport> getAllReports() {
         return reportRepository.findAll();
+    }
+
+    public Page<AttendanceReport> searchReports(Specification<AttendanceReport> spec, Pageable pageable) {
+        return reportRepository.findAll(spec, pageable);
     }
 
     public void generateReport(Attendance attendance) {

@@ -1,10 +1,5 @@
-package com.attendance.employeeservice.entity;
+package com.attendance.employeeservice.dto;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,12 +8,8 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
-@Entity
 @Data
-@Table(name = "employees")
-public class Employee {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class EmployeeDto {
     private Long id;
 
     @NotBlank(message = "Name is required")
