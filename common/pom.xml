@@ -15,6 +15,10 @@
     <name>common</name>
     <description>Common module for Employee Attendance System</description>
 
+    <properties>
+        <spring-boot.repackage.skip>true</spring-boot.repackage.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

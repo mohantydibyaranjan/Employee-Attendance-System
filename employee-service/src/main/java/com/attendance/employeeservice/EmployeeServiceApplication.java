@@ -7,7 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@ComponentScan(basePackages = {"com.attendance.employeeservice", "com.attendance.common.util"})
+@ComponentScan(basePackages = {"com.attendance.employeeservice", "com.attendance.common"})
 public class EmployeeServiceApplication {
 
     public static void main(String[] args) {

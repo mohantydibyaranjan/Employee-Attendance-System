@@ -8,8 +8,8 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@ComponentScan(basePackages = {"com.attendance.attendanceservice", "com.attendance.common.util"})
-@EntityScan(basePackages = {"com.attendance.common.entity"})
+@ComponentScan(basePackages = {"com.attendance.attendanceservice", "com.attendance.common"})
+@EntityScan(basePackages = {"com.attendance.attendanceservice.model", "com.attendance.common.entity"})
 public class AttendanceServiceApplication {
 
     public static void main(String[] args) {
