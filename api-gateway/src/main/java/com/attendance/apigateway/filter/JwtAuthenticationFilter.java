@@ -1,11 +1,10 @@
 package com.attendance.apigateway.filter;
 
 import com.attendance.apigateway.config.RouterValidator;
-import com.attendance.apigateway.util.JwtUtil;
+import com.attendance.common.util.JwtUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.attendance.common.dto.ErrorResponse;
-import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -18,7 +17,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter {
@@ -44,33 +42,10 @@ public class JwtAuthenticationFilter implements GlobalFilter {
             final String token = this.getAuthHeader(request);
 
             if (!jwtUtil.validateToken(token)) {
-                return this.onError(exchange, "Authorization header is invalid", HttpStatus.FORBIDDEN);
+                return this.onError(exchange, "Authorization header is invalid", HttpStatus.UNAUTHORIZED);
             }
-
-            final Claims claims = jwtUtil.extractAllClaims(token);
-            final String role = claims.get("role", String.class);
-
-            if (!hasRequiredRole(request, role)) {
-                return this.onError(exchange, "You do not have permission to access this resource", HttpStatus.FORBIDDEN);
-            }
-
-            exchange.getRequest().mutate()
-                    .header("X-Role", role)
-                    .header("X-Employee-Id", claims.get("employeeId").toString())
-                    .build();
         }
         return chain.filter(exchange);
-    }
-
-    private boolean hasRequiredRole(ServerHttpRequest request, String role) {
-        String path = request.getURI().getPath();
-        if (path.startsWith("/employee/") || path.startsWith("/report/")) {
-            return "ADMIN".equals(role);
-        }
-        if (path.startsWith("/attendance/")) {
-            return "ADMIN".equals(role) || "EMPLOYEE".equals(role);
-        }
-        return true;
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {
