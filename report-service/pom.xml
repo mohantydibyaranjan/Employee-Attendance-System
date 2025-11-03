@@ -68,11 +68,6 @@
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.attendance</groupId>
-            <artifactId>common</artifactId>
-            <version>1.0.0</version>
-        </dependency>
     </dependencies>
 
 </project>
