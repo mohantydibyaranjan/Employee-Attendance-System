@@ -1,68 +1,51 @@
 package com.attendance.common.util;
 
-import com.attendance.common.exception.AccessDeniedException;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+import io.jsonwebtoken.*;
 import org.springframework.stereotype.Component;
-
-import java.util.Date;
-import java.util.function.Function;
+import java.util.*;
 
 @Component
 public class JwtUtil {
+    private final String secret = "wpembytrwcvnryxksdbqwjebruyGHyudqgwveytrtrCSnwifoesarjbwe";
 
-    @Value("${jwt.secret}")
-    private String secret;
-
-    @Value("${jwt.expiration}")
-    private Long expiration;
-
-    public String generateToken(String username, String role, Long employeeId, String email) {
+    public String generateToken(String username, String role, Long id, String email) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+        claims.put("id", id);
+        claims.put("email", email);
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(username)
-                .claim("role", role)
-                .claim("employeeId", employeeId)
-                .claim("email", email)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(Keys.hmacShaKeyFor(secret.getBytes()), SignatureAlgorithm.HS512)
-                .compact();
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+                .signWith(SignatureAlgorithm.HS256, secret).compact();
+    }
+
+    public String extractUsername(String token) {
+        return extractAllClaims(token).getSubject();
+    }
+
+    public String extractRole(String token) {
+        return (String) extractAllClaims(token).get("role");
+    }
+
+    public Long extractEmployeeId(String token) {
+        return extractAllClaims(token).get("id", Long.class);
+    }
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .setSigningKey(secret)
+                .parseClaimsJws(token.replace("Bearer ", ""))
+                .getBody();
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(Keys.hmacShaKeyFor(secret.getBytes())).build().parseClaimsJws(token);
+            extractAllClaims(token);
             return true;
-        } catch (Exception e) {
+        } catch (JwtException e) {
             return false;
         }
-    }
-
-    public Claims extractAllClaims(String token) {
-        try {
-            return Jwts.parserBuilder().setSigningKey(Keys.hmacShaKeyFor(secret.getBytes())).build().parseClaimsJws(token).getBody();
-        } catch (Exception e) {
-            throw new AccessDeniedException("Invalid token");
-        }
-    }
-
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
-
-    public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
-    }
-
-    public String extractRole(String token) {
-        return extractClaim(token, claims -> claims.get("role", String.class));
-    }
-
-    public Long extractEmployeeId(String token) {
-        return extractClaim(token, claims -> claims.get("employeeId", Long.class));
     }
 }

@@ -1,5 +1,6 @@
 package com.attendance.apigateway.filter;
 
+import org.slf4j.MDC;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -12,15 +13,18 @@ import java.util.UUID;
 @Component
 public class TraceIdFilter implements GlobalFilter, Ordered {
 
+    private static final String TRACE_ID = "traceId";
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String traceId = UUID.randomUUID().toString();
-        exchange.getRequest().mutate().header("traceId", traceId).build();
-        return chain.filter(exchange).contextWrite(ctx -> ctx.put("traceId", traceId));
+        MDC.put(TRACE_ID, traceId);
+        exchange.getRequest().mutate().header(TRACE_ID, traceId).build();
+        return chain.filter(exchange).doFinally(signalType -> MDC.remove(TRACE_ID));
     }
 
     @Override
     public int getOrder() {
-        return -1;
+        return Ordered.HIGHEST_PRECEDENCE;
     }
 }
