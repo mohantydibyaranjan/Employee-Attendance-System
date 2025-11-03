@@ -4,6 +4,17 @@ server:
 spring:
   application:
     name: notification-service
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: "" # Use environment variables or a secure vault for production
+    password: "" # Use environment variables or a secure vault for production
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   kafka:
     bootstrap-servers: localhost:9092
     consumer:

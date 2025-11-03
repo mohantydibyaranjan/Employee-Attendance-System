@@ -19,4 +19,5 @@ public class AttendanceReport {
     private Integer totalWorkingDays;
     private Integer lateCheckIns;
     private Double averageWorkingHours;
+    private String status;
 }

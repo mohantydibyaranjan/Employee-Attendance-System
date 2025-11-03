@@ -2,6 +2,7 @@ package com.attendance.reportservice.controller;
 
 import com.attendance.common.dto.ApiResponse;
 import com.attendance.reportservice.entity.AttendanceReport;
+import com.attendance.common.util.ApiResponseFactory;
 import com.attendance.common.util.JwtUtil;
 import com.attendance.reportservice.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,7 +42,7 @@ public class ReportController {
     public ResponseEntity<ApiResponse<AttendanceReport>> getMonthlySummary(@RequestHeader("Authorization") String authHeader, @RequestParam Long employeeId, @RequestParam String month) {
         checkAdminRole(authHeader);
         AttendanceReport report = reportService.getMonthlySummary(employeeId, month);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Monthly summary retrieved successfully", report));
+        return ResponseEntity.ok(ApiResponseFactory.createMonthlySummaryResponse(report, report.getStatus()));
     }
 
     @Operation(summary = "Get daily summary", description = "Retrieves the daily attendance summary.")

@@ -1,8 +1,11 @@
 package com.attendance.attendanceservice.service;
 
+import com.attendance.attendanceservice.repository.EmployeeRepository;
 import com.attendance.common.entity.Attendance;
 import com.attendance.attendanceservice.repository.AttendanceRepository;
+import com.attendance.common.entity.Employee;
 import com.attendance.common.exception.InvalidOperationException;
+import com.attendance.common.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -21,6 +25,9 @@ public class AttendanceService {
 
     @Autowired
     private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
@@ -32,10 +39,22 @@ public class AttendanceService {
     private static final String ONLINE_EMPLOYEES_KEY = "online_employees";
 
     public Attendance checkIn(Long employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
         Attendance attendance = new Attendance();
         attendance.setEmployeeId(employeeId);
-        attendance.setCheckInTime(LocalDateTime.now());
-        attendance.setStatus("PRESENT");
+        attendance.setEmail(employee.getEmail());
+        LocalDateTime checkInTime = LocalDateTime.now();
+        attendance.setCheckInTime(checkInTime);
+
+        LocalTime checkInTimeOfDay = checkInTime.toLocalTime();
+        if (checkInTimeOfDay.isAfter(LocalTime.of(9, 30))) {
+            attendance.setStatus("LATE");
+        } else {
+            attendance.setStatus("PRESENT");
+        }
+
         attendanceRepository.save(attendance);
 
         redisTemplate.opsForSet().add(ONLINE_EMPLOYEES_KEY, employeeId.toString());

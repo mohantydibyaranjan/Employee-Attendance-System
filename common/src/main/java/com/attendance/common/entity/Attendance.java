@@ -21,4 +21,5 @@ public class Attendance {
     private LocalDateTime checkOutTime;
     private Double totalHours;
     private String status;
+    private String email;
 }

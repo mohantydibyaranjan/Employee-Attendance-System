@@ -50,6 +50,12 @@ public class ReportService {
                 (report.getAverageWorkingHours() == null ? 0 : report.getAverageWorkingHours() * (report.getTotalWorkingDays() - 1) + attendance.getTotalHours()) / report.getTotalWorkingDays()
         );
 
+        if (report.getLateCheckIns() != null && report.getLateCheckIns() <= 2) {
+            report.setStatus("GOOD_ATTENDANCE");
+        } else {
+            report.setStatus("NEEDS_IMPROVEMENT");
+        }
+
         reportRepository.save(report);
     }
 }

@@ -4,6 +4,7 @@ import com.attendance.common.dto.ApiResponse;
 import com.attendance.common.dto.AttendanceDto;
 import com.attendance.common.entity.Attendance;
 import com.attendance.attendanceservice.service.AttendanceService;
+import com.attendance.common.util.ApiResponseFactory;
 import com.attendance.common.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -42,7 +43,7 @@ public class AttendanceController {
         checkHasEmployeeOrAdminRole(authHeader);
         Long employeeId = jwtUtil.extractEmployeeId(authHeader.substring(7));
         Attendance attendance = attendanceService.checkIn(employeeId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Check-in successful", convertToDto(attendance)));
+        return ResponseEntity.ok(ApiResponseFactory.createCheckInResponse(convertToDto(attendance)));
     }
 
     @Operation(summary = "Check out", description = "Records an employee's check-out.")
@@ -51,7 +52,7 @@ public class AttendanceController {
         checkHasEmployeeOrAdminRole(authHeader);
         Long employeeId = jwtUtil.extractEmployeeId(authHeader.substring(7));
         Attendance attendance = attendanceService.checkOut(employeeId);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Check-out successful", convertToDto(attendance)));
+        return ResponseEntity.ok(ApiResponseFactory.createCheckOutResponse(convertToDto(attendance)));
     }
 
     @Operation(summary = "Get today's attendance", description = "Retrieves today's attendance for a given employee.")
