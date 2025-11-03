@@ -17,6 +17,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter {
@@ -43,6 +44,15 @@ public class JwtAuthenticationFilter implements GlobalFilter {
 
             if (!jwtUtil.validateToken(token)) {
                 return this.onError(exchange, "Authorization header is invalid", HttpStatus.UNAUTHORIZED);
+            }
+
+            String role = jwtUtil.extractRole(token);
+            String path = request.getPath().toString();
+
+            if (path.startsWith("/employee/") || path.startsWith("/report/")) {
+                if (!"ADMIN".equals(role)) {
+                    return this.onError(exchange, "You do not have permission to perform this action.", HttpStatus.FORBIDDEN);
+                }
             }
         }
         return chain.filter(exchange);
