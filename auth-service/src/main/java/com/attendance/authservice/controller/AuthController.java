@@ -31,7 +31,7 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse<>(true, "User registered successfully", registeredUser));
     }
 
-    @Operation(summary = "Login a user", description = "Authenticates a user and returns a JWT.")
+    @Operation(summary = "Login a user", description = "Authenticates a user with email and password, and returns a JWT.")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody AuthRequest authRequest) {
         String token = userService.login(authRequest);

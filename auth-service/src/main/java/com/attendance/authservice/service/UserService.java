@@ -4,10 +4,9 @@ import com.attendance.authservice.dto.AuthRequest;
 import com.attendance.authservice.dto.UserDto;
 import com.attendance.authservice.entity.User;
 import com.attendance.authservice.repository.UserRepository;
-import com.attendance.common.exception.InvalidOperationException;
-import com.attendance.common.exception.ResourceNotFoundException;
 import com.attendance.common.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -33,11 +32,13 @@ public class UserService {
     }
 
     public String login(AuthRequest authRequest) {
-        User user = userRepository.findByUsername(authRequest.getUsername())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = userRepository.findByEmail(authRequest.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid email or password"));
+
         if (passwordEncoder.matches(authRequest.getPassword(), user.getPassword())) {
-            return jwtUtil.generateToken(user.getUsername(), user.getRole(), user.getId(), user.getEmail());
+            return jwtUtil.generateToken(user.getEmail(), user.getRole(), user.getId(), user.getEmail());
+        } else {
+            throw new UsernameNotFoundException("Invalid email or password");
         }
-        throw new InvalidOperationException("Invalid password");
     }
 }
