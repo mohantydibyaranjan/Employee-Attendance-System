@@ -42,7 +42,7 @@ public class AttendanceController {
     public ResponseEntity<ApiResponse<AttendanceDto>> checkIn(@RequestHeader("Authorization") String authHeader) {
         checkHasEmployeeOrAdminRole(authHeader);
         Long employeeId = jwtUtil.extractEmployeeId(authHeader.substring(7));
-        Attendance attendance = attendanceService.checkIn(employeeId);
+        Attendance attendance = attendanceService.checkIn(employeeId, authHeader);
         return ResponseEntity.ok(ApiResponseFactory.createCheckInResponse(convertToDto(attendance)));
     }
 

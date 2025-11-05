@@ -1,11 +1,11 @@
 package com.attendance.attendanceservice.service;
 
-import com.attendance.attendanceservice.repository.EmployeeRepository;
+import com.attendance.attendanceservice.client.EmployeeServiceClient;
+import com.attendance.common.dto.ApiResponse;
+import com.attendance.common.dto.EmployeeDto;
 import com.attendance.common.entity.Attendance;
 import com.attendance.attendanceservice.repository.AttendanceRepository;
-import com.attendance.common.entity.Employee;
 import com.attendance.common.exception.InvalidOperationException;
-import com.attendance.common.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -15,10 +15,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class AttendanceService {
@@ -27,7 +27,7 @@ public class AttendanceService {
     private AttendanceRepository attendanceRepository;
 
     @Autowired
-    private EmployeeRepository employeeRepository;
+    private EmployeeServiceClient employeeServiceClient;
 
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
@@ -38,10 +38,12 @@ public class AttendanceService {
     private static final String ATTENDANCE_TOPIC = "attendance-topic";
     private static final String ONLINE_EMPLOYEES_KEY = "online_employees";
 
-    public Attendance checkIn(Long employeeId) {
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
-
+    public Attendance checkIn(Long employeeId, String authToken) {
+        ApiResponse<EmployeeDto> employeeResponse = employeeServiceClient.getEmployeeById(authToken, employeeId);
+        if (Objects.isNull(employeeResponse) || Objects.isNull(employeeResponse.getData())) {
+            throw new InvalidOperationException("Employee not found");
+        }
+        EmployeeDto employee = employeeResponse.getData();
         Attendance attendance = new Attendance();
         attendance.setEmployeeId(employeeId);
         attendance.setEmail(employee.getEmail());
