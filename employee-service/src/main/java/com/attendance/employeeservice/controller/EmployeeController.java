@@ -46,7 +46,14 @@ public class EmployeeController {
     @Operation(summary = "Get an employee by ID", description = "Retrieves an employee by their ID.")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<EmployeeDto>> getEmployeeById(@RequestHeader("Authorization") String authHeader, @PathVariable Long id) {
-        checkAdminRole(authHeader);
+        String token = authHeader.substring(7);
+        String role = jwtUtil.extractRole(token);
+        Long requesterId = jwtUtil.extractEmployeeId(token);
+
+        if (!"ADMIN".equals(role) && !requesterId.equals(id)) {
+            throw new com.attendance.common.exception.AccessDeniedException("You do not have permission to access this resource.");
+        }
+
         Employee employee = employeeService.getEmployeeById(id);
         return ResponseEntity.ok(new ApiResponse<>(true, "Employee retrieved successfully", convertToDto(employee)));
     }
