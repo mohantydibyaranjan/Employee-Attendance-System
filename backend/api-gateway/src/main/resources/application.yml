@@ -20,19 +20,19 @@ spring:
         - id: auth-service
           uri: lb://auth-service
           predicates:
-            - Path=/auth/**
+            - Path=/api/auth/**
         - id: employee-service
           uri: lb://employee-service
           predicates:
-            - Path=/employee/**
+            - Path=/api/employee/**
         - id: attendance-service
           uri: lb://attendance-service
           predicates:
-            - Path=/attendance/**
+            - Path=/api/attendance/**
         - id: report-service
           uri: lb://report-service
           predicates:
-            - Path=/report/**
+            - Path=/api/report/**
 
 eureka:
   client:

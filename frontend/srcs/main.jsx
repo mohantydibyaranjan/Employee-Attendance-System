@@ -9,12 +9,12 @@ import './index.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <Router>
+    <Router>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
           <App />
-        </Router>
-      </PersistGate>
-    </Provider>
+        </PersistGate>
+      </Provider>
+    </Router>
   </StrictMode>
 );

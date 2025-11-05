@@ -1,14 +1,19 @@
+import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
+
+const employeeLinks = [
+  { to: '/employee/dashboard', label: 'Dashboard' },
+];
 
 const EmployeeLayout = () => {
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <div className="flex-1 p-6">
-        <Navbar />
-        <main className="mt-6">
+    <div className="flex flex-col h-screen">
+      <Navbar />
+      <div className="flex flex-1">
+        <Sidebar links={employeeLinks} />
+        <main className="flex-1 p-6 bg-gray-50">
           <Outlet />
         </main>
       </div>
