@@ -9,13 +9,14 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins: "http://localhost:5173"
-            allowedMethods:
+            allowed-origins: "http://localhost:5173"
+            allowed-methods:
               - GET
               - POST
               - PUT
               - DELETE
-            allowedHeaders: "*"
+              - OPTIONS
+            allowed-headers: "*"
       routes:
         - id: auth-service
           uri: lb://auth-service
