@@ -31,12 +31,13 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public String login(AuthRequest authRequest) {
+    public LoginResult login(AuthRequest authRequest) {
         User user = userRepository.findByEmail(authRequest.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid email or password"));
 
         if (passwordEncoder.matches(authRequest.getPassword(), user.getPassword())) {
-            return jwtUtil.generateToken(user.getEmail(), user.getRole(), user.getId(), user.getEmail());
+            String token = jwtUtil.generateToken(user.getEmail(), user.getRole(), user.getId(), user.getEmail());
+            return new LoginResult(user, token);
         } else {
             throw new UsernameNotFoundException("Invalid email or password");
         }

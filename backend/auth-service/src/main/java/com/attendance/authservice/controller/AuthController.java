@@ -1,9 +1,10 @@
 package com.attendance.authservice.controller;
 
 import com.attendance.authservice.dto.AuthRequest;
-import com.attendance.authservice.dto.AuthResponse;
+import com.attendance.authservice.dto.LoginResponse;
 import com.attendance.authservice.dto.UserDto;
 import com.attendance.authservice.entity.User;
+import com.attendance.authservice.service.LoginResult;
 import com.attendance.authservice.service.UserService;
 import com.attendance.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,10 +32,21 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse<>(true, "User registered successfully", registeredUser));
     }
 
-    @Operation(summary = "Login a user", description = "Authenticates a user with email and password, and returns a JWT.")
+    @Operation(summary = "Login a user", description = "Authenticates a user and returns a comprehensive login response.")
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody AuthRequest authRequest) {
-        String token = userService.login(authRequest);
-        return ResponseEntity.ok(new ApiResponse<>(true, "Login successful", new AuthResponse(token)));
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody AuthRequest authRequest) {
+        LoginResult loginResult = userService.login(authRequest);
+        User user = loginResult.getUser();
+
+        LoginResponse loginResponse = LoginResponse.builder()
+                .employeeId(user.getId())
+                .name(user.getUsername())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .token(loginResult.getToken())
+                .build();
+
+        String message = String.format("Login successful! Welcome back, %s 👋", user.getUsername());
+        return ResponseEntity.ok(new ApiResponse<>(true, message, loginResponse));
     }
 }
